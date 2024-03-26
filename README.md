@@ -1,8 +1,14 @@
 # user-op
-// TODO(user): Add simple overview of use/purpose
+This is a simple example of a Kubernetes operator written in Go. The sole purpose of this operator is
+to add a user in a Database table called `users`
 
 ## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+The milestones of this project are:
+- [ ] Create a Custom Resource Definition (CRD) for the user in order to create CRs (e.g. User CR)
+- [ ] Create a database table called `users` in a PostGreSQL database. The database should be in a Docker container. 
+- [ ] Add logic in the controller to add a user in the `users` table when a User CR is created
+- [ ] Deploy the controller to a Kubernetes cluster and integrate it with the local database.
+- [ ] Add a second controller that will take care of creating a PostgresSQL Database
 
 ## Getting Started
 You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
@@ -42,7 +48,6 @@ make undeploy
 ```
 
 ## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
 
 ### How it works
 This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/).
