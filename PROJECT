@@ -7,4 +7,14 @@ layout:
 - go.kubebuilder.io/v4
 projectName: user-op
 repo: github.com/fghimpeteanu-ionos/user-op
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: filip.org
+  group: user
+  kind: User
+  path: github.com/fghimpeteanu-ionos/user-op/api/v1
+  version: v1
 version: "3"

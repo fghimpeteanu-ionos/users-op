@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - filip.org
+  resources:
+  - users
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - filip.org
+  resources:
+  - users/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - filip.org
+  resources:
+  - users/status
+  verbs:
+  - get
+  - patch
+  - update

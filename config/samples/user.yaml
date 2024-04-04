@@ -1,0 +1,13 @@
+apiVersion: filip.org/v1
+kind: User
+metadata:
+  labels:
+    app.kubernetes.io/name: user-op
+    app.kubernetes.io/managed-by: kustomize
+  name: user1
+spec:
+  firstName: "Micha"
+  lastName: "Jones"
+  age: 43
+  email: "micha.jones@email.com"
+  address: "Nowhere Street 123"
