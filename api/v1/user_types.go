@@ -23,6 +23,14 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+type State string
+
+const (
+	READY   State = "READY"
+	PENDING State = "PENDING"
+	FAILED  State = "FAILED"
+)
+
 // UserSpec defines the desired state of User
 type UserSpec struct {
 	// FirstName is the first name of the user
@@ -49,6 +57,11 @@ type UserSpec struct {
 type UserStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	UUID string `json:"uuid,omitempty"`
+
+	// State is the state of the user
+	// +kubebuilder:validation:Enum=READY;PENDING;FAILED
+	State State `json:"state,omitempty"`
 }
 
 //+kubebuilder:object:root=true
