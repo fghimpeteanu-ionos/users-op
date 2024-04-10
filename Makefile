@@ -183,6 +183,24 @@ golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(LOCALBIN)
 	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,${GOLANGCI_LINT_VERSION})
 
+.PHONY: install-db
+install-db:
+	printf ">>> Installing PostgreSQL DB...\n"
+	helm repo add bitnami https://charts.bitnami.com/bitnami
+	helm repo update
+	helm install my-db -f helm/postgresql-values.yaml bitnami/postgresql
+	printf ">>> Done...\n"
+
+.PHONY: uninstall-db
+uninstall-db:
+	printf ">>> Uninstalling PostgreSQL DB...\n"
+	helm uninstall my-db
+	printf ">>> Removing the PVC so that DB configs are removed\n"
+	kubectl wait --for=delete pod/my-db-postgresql-0 --timeout=90s
+	kubectl delete persistentvolumeclaim/data-my-db-postgresql-0
+	printf ">>> Done...\n"
+
+
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
 # $1 - target path with name of binary (ideally with version)
 # $2 - package url which can be installed

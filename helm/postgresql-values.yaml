@@ -1,0 +1,3 @@
+auth:
+  postgresPassword: "pg-pretest"
+  database: "user-db"
