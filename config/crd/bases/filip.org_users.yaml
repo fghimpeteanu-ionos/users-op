@@ -16,7 +16,17 @@ spec:
     singular: user
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .status.state
+      name: STATE
+      type: string
+    - jsonPath: .status.uuid
+      name: UUID
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1
     schema:
       openAPIV3Schema:
         description: User is the Schema for the users API
@@ -72,9 +82,7 @@ spec:
                 - FAILED
                 type: string
               uuid:
-                description: |-
-                  INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-                  Important: Run "make" to regenerate code after modifying this file
+                description: UUID is the unique identifier of the user in the DB
                 type: string
             type: object
         type: object

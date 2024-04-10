@@ -55,8 +55,7 @@ type UserSpec struct {
 
 // UserStatus defines the observed state of User
 type UserStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// UUID is the unique identifier of the user in the DB
 	UUID string `json:"uuid,omitempty"`
 
 	// State is the state of the user
@@ -68,6 +67,9 @@ type UserStatus struct {
 //+kubebuilder:subresource:status
 
 // User is the Schema for the users API
+// +kubebuilder:printcolumn:name="STATE",type="string",JSONPath=".status.state"
+// +kubebuilder:printcolumn:name="UUID",type="string",JSONPath=".status.uuid"
+// +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:resource:shortName=usr
 type User struct {
 	metav1.TypeMeta   `json:",inline"`
