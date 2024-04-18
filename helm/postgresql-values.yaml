@@ -1,3 +1,28 @@
-auth:
-  postgresPassword: "pg-pretest"
-  database: "user-db"
+global:
+# Enable more logs
+#  image:
+#    debug: true
+  postgresql:
+    auth:
+      postgresPassword: "pg-pretest"
+      username: "user-op"
+      password: "user-op-pretest"
+      database:  "user-db"
+primary:
+  initdb:
+    user: "user-op"
+    password: "user-op-pretest"
+    scripts:
+      schema-creation.sql: |-
+        -- This is needed in order to use the uuid_generate_v4() function
+        CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+        CREATE TABLE users (
+          UUID UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          FirstName VARCHAR(255),
+          LastName VARCHAR(255),
+          Age INT,
+          Address VARCHAR(255),
+          Email VARCHAR(255)
+        );
+        INSERT INTO users(firstname, lastname, age, address, email) 
+        VALUES ('John', 'Doe', 47, 'Somewhere str 201', 'john.doe@mail.com');

@@ -5,7 +5,7 @@ to add a user in a Database table called `users`
 ## Description
 The milestones of this project are:
 - [x] Create a Custom Resource Definition (CRD) for the user in order to create CRs (e.g. User CR)
-- [ ] Create a database table called `users` in a PostGreSQL database. The database should be installed via Helm.
+- [x] Create a database table called `users` in a PostGreSQL database. The database should be installed via Helm.
 - [ ] Add logic in the controller to add a user in the `users` table when a User CR is created
 - [ ] Deploy the controller to a Kubernetes cluster and integrate it with the local database.
 - [ ] Add a second controller that will take care of creating a PostgresSQL Database
@@ -56,46 +56,52 @@ It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controlle
 which provide a reconcile function responsible for synchronizing resources until the desired state is reached on the cluster.
 
 ### Test It Out
-1. Install the DB helm chart
+1. Have a Kubernetes cluster running. For local testing you can use [KIND](https://kind.sigs.k8s.io/docs/user/quick-start/)
+```sh
+kind create cluster -n user-op
+```
+
+2. Install the DB helm chart
 ```sh
 make install-db
 ````
 
-2. Connect to the DB
+3. Connect to the DB
 ```sh
 kubectl port-forward --namespace default svc/my-db-postgresql 25432:5432
-# authenticate with postgres user
+# authernticate with user-op user
+PGPASSWORD=user-op-pretest psql --host 127.0.0.1 -U user-op -d user-db -p 25432
+
+# OR authenticate with postgres user
 PGPASSWORD=pg-pretest psql --host 127.0.0.1 -U postgres -d user-db -p 25432
 ```
 
-3. Install the CRDs into the cluster:
+4. Install the CRDs into the cluster:
 ```sh
 make install
 ```
 
-4. Run your controller (this will run in the foreground, so switch to a new terminal if you want to leave it running):
+5. Run your controller (this will run in the foreground, so switch to a new terminal if you want to leave it running):
 ```sh
 make run
 ```
 
 **NOTE:** You can also run this in one step by running: `make install run`
 
-5. Create a User CR:
+6. Create a User CR:
 ```sh
 kubectl apply -f config/samples/user.yaml 
 ```
 
-6. List resourceds
+7. List resourceds
 ```sh
 watch "kubectl get all,configmap,secrets,pv,pvc"
 ```
 
-7. Cleanup
+8. Cleanup
 ```sh
-# uninstall PostgreSQL
+# uninstall PostgreSQL DB
 make uninstall-db
-
-# Remove the PVC and PV created for the PostgreSQL
 ```
 
 ### Modifying the API definitions
