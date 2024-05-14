@@ -20,7 +20,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/google/uuid"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,7 +33,8 @@ const waitTime = 10 * time.Second
 // UserReconciler reconciles a User object
 type UserReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme          *runtime.Scheme
+	userPersistence UserPersistence
 }
 
 //+kubebuilder:rbac:groups=filip.org,resources=users,verbs=get;list;watch;create;update;patch;delete
@@ -43,13 +43,6 @@ type UserReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the User object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.17.2/pkg/reconcile
 func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -57,7 +50,7 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	err := r.Client.Get(ctx, req.NamespacedName, user)
 	if err != nil {
 		logger.Error(err, "unable to fetch User with name: "+req.Name)
-		return ctrl.Result{}, err
+		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	if user.Status.State == userv1.READY {
@@ -68,7 +61,7 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger.Info("Reconciling User", "User Spec", user.Spec)
 	user.Status.State = userv1.PENDING
 
-	err = addUserInDB(user)
+	err = r.addUserInDB(user)
 	if err != nil {
 		logger.Error(err, "unable to add user in DB")
 		user.Status.State = userv1.FAILED
@@ -84,14 +77,19 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return ctrl.Result{}, nil
 }
 
-func addUserInDB(user *userv1.User) error {
-	user.Status.UUID = uuid.New().String()
+func (r *UserReconciler) addUserInDB(user *userv1.User) error {
+	uuid, err := r.userPersistence.Persist(user)
+	if err != nil {
+		return err
+	}
+	user.Status.UUID = uuid
 	user.Status.State = userv1.READY
 	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *UserReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	r.userPersistence = &UserPersistenceImpl{}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&userv1.User{}).
 		Complete(r)
