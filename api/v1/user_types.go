@@ -26,9 +26,9 @@ import (
 type State string
 
 const (
-	READY   State = "READY"
-	PENDING State = "PENDING"
-	FAILED  State = "FAILED"
+	READY    State = "READY"
+	CREATING State = "CREATING"
+	FAILED   State = "FAILED"
 )
 
 // UserSpec defines the desired state of User
@@ -59,7 +59,7 @@ type UserStatus struct {
 	UUID string `json:"uuid,omitempty"`
 
 	// State is the state of the user
-	// +kubebuilder:validation:Enum=READY;PENDING;FAILED
+	// +kubebuilder:validation:Enum=READY;CREATING;FAILED
 	State State `json:"state,omitempty"`
 }
 

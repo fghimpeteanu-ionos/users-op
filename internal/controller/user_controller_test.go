@@ -170,14 +170,14 @@ type UserPersistenceStub struct {
 	mock.Mock
 }
 
-func (u *UserPersistenceStub) Persist(user *userv1.User) (string, error) {
+func (u *UserPersistenceStub) Persist(user *CreateUserE) (string, error) {
 	args := u.Called(user)
 	return args.String(0), args.Error(1)
 }
 
-func (u *UserPersistenceStub) Read(uuid string) (*userv1.User, error) {
+func (u *UserPersistenceStub) Read(uuid string) (*ReadUserE, error) {
 	args := u.Called(uuid)
-	return args.Get(0).(*userv1.User), args.Error(1)
+	return args.Get(0).(*ReadUserE), args.Error(1)
 }
 
 func stubUserPersistence() *UserPersistenceStub {

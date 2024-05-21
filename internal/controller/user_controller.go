@@ -20,6 +20,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -28,13 +29,14 @@ import (
 	userv1 "github.com/fghimpeteanu-ionos/user-op/api/v1"
 )
 
-const waitTime = 10 * time.Second
+const waitTime = 15 * time.Second
 
 // UserReconciler reconciles a User object
 type UserReconciler struct {
 	client.Client
 	Scheme          *runtime.Scheme
 	userPersistence UserPersistence
+	log             *logr.Logger
 }
 
 //+kubebuilder:rbac:groups=filip.org,resources=users,verbs=get;list;watch;create;update;patch;delete
@@ -44,47 +46,44 @@ type UserReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx)
+	r.setLogger(ctx)
 
 	user := &userv1.User{}
 	err := r.Client.Get(ctx, req.NamespacedName, user)
 	if err != nil {
-		logger.Error(err, "unable to fetch User with name: "+req.Name)
+		r.log.Error(err, "unable to fetch User with name: "+req.Name)
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if user.Status.State == userv1.READY {
-		logger.Info("Nothing to reconcile. Will go to sleep for " + waitTime.String() + " ...")
+	isUserPersisted := isUserPersisted(user, r)
+	if !isUserPersisted && isUserStatusNotSet(user) || (!isUserPersisted && isUserReady(user)) {
+		user.Status.State = userv1.CREATING
+		r.log.Info("User not persisted. Will reconcile ...")
+		err = r.updateUserCR(ctx, err, user)
+		return ctrl.Result{Requeue: true}, err
+	}
+
+	if isUserReady(user) {
+		r.log.Info("Nothing to reconcile. Will go to sleep for " + waitTime.String() + " ...")
 		return ctrl.Result{RequeueAfter: waitTime}, nil
 	}
 
-	logger.Info("Reconciling User", "User Spec", user.Spec)
-	user.Status.State = userv1.PENDING
-
+	r.log.Info("Reconciling User", "User Spec", user.Spec)
 	err = r.addUserInDB(user)
 	if err != nil {
-		logger.Error(err, "unable to add user in DB")
+		r.log.Error(err, "unable to add user in DB")
 		user.Status.State = userv1.FAILED
+		err = r.updateUserCR(ctx, err, user)
 		return ctrl.Result{}, err
 	}
 
-	err = r.Client.Status().Update(ctx, user)
-	if err != nil {
-		logger.Error(err, "unable to update User resource")
-		return ctrl.Result{}, err
-	}
-
-	return ctrl.Result{}, nil
+	user.Status.State = userv1.READY
+	err = r.updateUserCR(ctx, err, user)
+	return ctrl.Result{}, err
 }
 
-func (r *UserReconciler) addUserInDB(user *userv1.User) error {
-	uuid, err := r.userPersistence.Persist(user)
-	if err != nil {
-		return err
-	}
-	user.Status.UUID = uuid
-	user.Status.State = userv1.READY
-	return nil
+func isUserStatusNotSet(u *userv1.User) bool {
+	return u.Status.State == ""
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -93,4 +92,57 @@ func (r *UserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&userv1.User{}).
 		Complete(r)
+}
+
+func (r *UserReconciler) setLogger(ctx context.Context) {
+	if r.log == nil {
+		loggerFromContext := log.FromContext(ctx)
+		r.log = &loggerFromContext
+	}
+}
+func (r *UserReconciler) addUserInDB(user *userv1.User) error {
+	createUserE := toCreateUserE(user)
+	uuid, err := r.userPersistence.Persist(createUserE)
+	if err != nil {
+		return err
+	}
+	user.Status.UUID = uuid
+	return nil
+}
+
+func (r *UserReconciler) updateUserCR(ctx context.Context, err error, user *userv1.User) error {
+	err = r.Client.Status().Update(ctx, user)
+	if err != nil {
+		r.log.Error(err, "unable to update User resource")
+		return err
+	}
+	return nil
+}
+func isUserPersisted(user *userv1.User, r *UserReconciler) bool {
+	userUUID := user.Status.UUID
+	if userUUID == "" {
+		return false
+	}
+
+	readUserE, err := r.userPersistence.Read(userUUID)
+	if err != nil {
+		r.log.Error(err, "unable to read user from DB")
+		return false
+	}
+	return readUserE != nil
+}
+
+func isUserReady(user *userv1.User) bool {
+	return user.Status.State == userv1.READY
+}
+
+func toCreateUserE(user *userv1.User) *CreateUserE {
+	createUserE := &CreateUserE{
+		firstName: user.Spec.FirstName,
+		lastName:  user.Spec.LastName,
+		age:       user.Spec.Age,
+		address:   user.Spec.Address,
+		email:     user.Spec.Email,
+	}
+	return createUserE
 }

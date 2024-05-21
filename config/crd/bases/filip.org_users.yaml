@@ -78,7 +78,7 @@ spec:
                 description: State is the state of the user
                 enum:
                 - READY
-                - PENDING
+                - CREATING
                 - FAILED
                 type: string
               uuid:

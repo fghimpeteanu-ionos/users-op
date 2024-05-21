@@ -5,9 +5,11 @@ to add a user in a Database table called `users`
 ## Description
 The milestones of this project are:
 - [x] Create a Custom Resource Definition (CRD) for the user in order to create CRs (e.g. User CR)
-- [x] Create a database table called `users` in a PostGreSQL database. The database should be installed via Helm.
-- [ ] Add logic in the controller to add a user in the `users` table when a User CR is created
-- [ ] Deploy the controller to a Kubernetes cluster and integrate it with the local database.
+- [x] Create a database table called `users` in a PostgreSQL database. The database should be installed via Helm.
+- [x] Add logic in the controller to add a user in the `users` table when a User CR is created (use port-forwarding to connect to the database)
+- [ ] Fix issue with concurrent updates (e.g. "...the object has been modified; please apply your changes to the latest version and try again"..."")
+- [ ] Update controller to read connection details from environment variables
+- [ ] Deploy the controller to a Kubernetes cluster via Helm and connect it with the PostgreSQL database
 - [ ] Add a second controller that will take care of creating a PostgresSQL Database
 
 ## Getting Started
