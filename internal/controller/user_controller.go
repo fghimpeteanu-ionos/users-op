@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -51,27 +52,27 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	user := &userv1.User{}
 	err := r.Client.Get(ctx, req.NamespacedName, user)
 	if err != nil {
-		r.log.Error(err, "unable to fetch User with name: "+req.Name)
+		r.logInfoFmt("Unable to fetch User with name: %s (might have been deleted)", req.Name)
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	isUserPersisted := isUserPersisted(user, r)
 	if !isUserPersisted && isUserStatusNotSet(user) || (!isUserPersisted && isUserReady(user)) {
 		user.Status.State = userv1.CREATING
-		r.log.Info("User not persisted. Will reconcile ...")
+		r.logInfoFmt("User not persisted. Will reconcile ...")
 		err = r.updateUserCR(ctx, err, user)
 		return ctrl.Result{Requeue: true}, err
 	}
 
 	if isUserReady(user) {
-		r.log.Info("Nothing to reconcile. Will go to sleep for " + waitTime.String() + " ...")
+		r.logInfoFmt("Nothing to reconcile. Will go to sleep for %s ...", waitTime.String())
 		return ctrl.Result{RequeueAfter: waitTime}, nil
 	}
 
 	r.log.Info("Reconciling User", "User Spec", user.Spec)
 	err = r.addUserInDB(user)
 	if err != nil {
-		r.log.Error(err, "unable to add user in DB")
+		r.log.Error(err, "Unable to add user in DB")
 		user.Status.State = userv1.FAILED
 		err = r.updateUserCR(ctx, err, user)
 		return ctrl.Result{}, err
@@ -80,6 +81,10 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	user.Status.State = userv1.READY
 	err = r.updateUserCR(ctx, err, user)
 	return ctrl.Result{}, err
+}
+
+func (r *UserReconciler) logInfoFmt(fmtMsg string, args ...any) {
+	r.log.Info(fmt.Sprintf(fmtMsg, args...))
 }
 
 func isUserStatusNotSet(u *userv1.User) bool {
@@ -113,7 +118,7 @@ func (r *UserReconciler) addUserInDB(user *userv1.User) error {
 func (r *UserReconciler) updateUserCR(ctx context.Context, err error, user *userv1.User) error {
 	err = r.Client.Status().Update(ctx, user)
 	if err != nil {
-		r.log.Error(err, "unable to update User resource")
+		r.log.Error(err, "Unable to update User resource")
 		return err
 	}
 	return nil
@@ -126,7 +131,7 @@ func isUserPersisted(user *userv1.User, r *UserReconciler) bool {
 
 	readUserE, err := r.userPersistence.Read(userUUID)
 	if err != nil {
-		r.log.Error(err, "unable to read user from DB")
+		r.log.Error(err, "Unable to read user from DB")
 		return false
 	}
 	return readUserE != nil
